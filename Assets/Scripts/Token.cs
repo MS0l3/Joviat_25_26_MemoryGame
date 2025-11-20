@@ -1,41 +1,77 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Token : MonoBehaviour
 {
-    private GameManager gameManager;
+    [HideInInspector] public GameManager gameManager;
     public MeshRenderer mr;
-    // Start is called before the first frame update
+    public bool isRevealed = false;
+    public bool isMatched = false;
+
+    private bool isFlipping = false;
+
     void Start()
     {
-        GameObject o = GameObject.FindGameObjectWithTag("GameManager");
-        gameManager = o.GetComponent<GameManager>();
+        if (gameManager == null)
+            gameManager = GameObject.FindGameObjectWithTag("GameManager").GetComponent<GameManager>();
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-    
     void OnMouseDown()
     {
-        gameManager.TokenPressed(gameObject.name);
+        if (!isFlipping && !isMatched)
+            gameManager.TokenPressed(gameObject.name);
     }
 
     public void ShowToken()
     {
-        transform.Rotate(Vector3.right, 180);
+        if (!isRevealed)
+            StartCoroutine(FlipTo(true));
     }
-    
+
     public void HideToken()
     {
-        transform.Rotate(Vector3.right, -180);
+        if (isRevealed)
+            StartCoroutine(FlipTo(false));
     }
-    
+
     public void MatchToken()
     {
+        isMatched = true;
+        StartCoroutine(Disappear());
+    }
+
+    private IEnumerator FlipTo(bool show)
+    {
+        isFlipping = true;
+        float duration = 0.3f;
+        float time = 0f;
+        Quaternion startRot = transform.rotation;
+        Quaternion endRot = show ? Quaternion.Euler(180, 0, 0) : Quaternion.identity;
+
+        while (time < duration)
+        {
+            time += Time.deltaTime;
+            transform.rotation = Quaternion.Slerp(startRot, endRot, time / duration);
+            yield return null;
+        }
+
+        transform.rotation = endRot;
+        isRevealed = show;
+        isFlipping = false;
+    }
+
+    private IEnumerator Disappear()
+    {
+        float t = 0f;
+        float duration = 0.5f;
+        Vector3 start = transform.localScale;
+        Vector3 end = Vector3.zero;
+        while (t < duration)
+        {
+            t += Time.deltaTime;
+            transform.localScale = Vector3.Lerp(start, end, t / duration);
+            yield return null;
+        }
         Destroy(gameObject);
     }
 }
